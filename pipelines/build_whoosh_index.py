@@ -1,4 +1,4 @@
-﻿import sys
+import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -15,7 +15,7 @@ def build_schema():
     return Schema(id=ID(stored=True, unique=True), content=TEXT(stored=True))
 
 def get_all_docs_from_qdrant():
-    # Utilise Qdrant pour rÃ©cupÃ©rer tous les passages dÃ©jÃ  vectorisÃ©s
+    # Utilise Qdrant pour récupérer tous les passages déjà vectorisés
     embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
     client = QdrantClient(url=settings.QDRANT_URL)
     vectorstore = Qdrant(
@@ -23,7 +23,7 @@ def get_all_docs_from_qdrant():
         collection_name=settings.QDRANT_COLLECTION,
         embeddings=embeddings,
     )
-    # RÃ©cupÃ©rer tout (attention Ã  la volumÃ©trie)
+    # Récupérer tout (attention à la volumétrie)
     docs = vectorstore.similarity_search(" ", k=10000)  # " " = match all (pas optimal mais fait le job)
     return docs
 
@@ -41,7 +41,7 @@ def build_index():
     for idx, doc in enumerate(docs):
         writer.add_document(id=str(idx), content=doc.page_content)
     writer.commit()
-    print("âœ… Index Whoosh crÃ©Ã©/mis Ã  jour.")
+    print("✅ Index Whoosh créé/mis à jour.")
 
 if __name__ == "__main__":
     build_index()

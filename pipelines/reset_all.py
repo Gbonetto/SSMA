@@ -1,4 +1,4 @@
-﻿import os
+import os
 import shutil
 from qdrant_client import QdrantClient
 
@@ -9,9 +9,9 @@ QDRANT_COLLECTION = "docs"
 client = QdrantClient(QDRANT_URL)
 try:
     client.delete_collection(collection_name=QDRANT_COLLECTION)
-    print(f"âœ… Collection Qdrant '{QDRANT_COLLECTION}' supprimÃ©e !")
+    print(f"✅ Collection Qdrant '{QDRANT_COLLECTION}' supprimée !")
 except Exception as e:
-    print(f"âš ï¸ Impossible de supprimer la collection QdrantÂ : {e}")
+    print(f"⚠ Impossible de supprimer la collection Qdrant : {e}")
 
 # === 2. RESET WHOOSH ===
 WHOOSH_INDEX_DIR = os.path.join(os.path.dirname(__file__), "../whoosh_index")
@@ -20,13 +20,13 @@ whoosh_dir = os.path.abspath(WHOOSH_INDEX_DIR)
 if os.path.isdir(whoosh_dir):
     try:
         shutil.rmtree(whoosh_dir)
-        print(f"âœ… Dossier Whoosh index '{whoosh_dir}' supprimÃ© !")
+        print(f"✅ Dossier Whoosh index '{whoosh_dir}' supprimé !")
     except Exception as e:
-        print(f"âš ï¸ Impossible de supprimer l'index WhooshÂ : {e}")
+        print(f"⚠ Impossible de supprimer l'index Whoosh : {e}")
 else:
-    print(f"â„¹ï¸ Dossier Whoosh index '{whoosh_dir}' inexistant (dÃ©jÃ  clean)")
+    print(f"ℹ Dossier Whoosh index '{whoosh_dir}' inexistant (déjà clean)")
 
-print("\nðŸŽ¯ RESET ALL terminÃ©. Tu peux relancer tes imports !")
+print("\n🎯 RESET ALL terminé. Tu peux relancer tes imports !")
 
 
 

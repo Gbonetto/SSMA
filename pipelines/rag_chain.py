@@ -1,4 +1,4 @@
-﻿# pipelines/rag_chain.py
+# pipelines/rag_chain.py
 
 import logging
 from qdrant_client import QdrantClient
@@ -15,25 +15,25 @@ def get_embeddings():
 
 def detect_intention(question: str) -> str:
     q = question.lower()
-    if "tout le texte" in q or "texte complet" in q or "copie intÃ©grale" in q:
+    if "tout le texte" in q or "texte complet" in q or "copie intégrale" in q:
         return "copie"
-    if "rÃ©sum" in q or "synthÃ¨se" in q:
+    if "résum" in q or "synthèse" in q:
         return "synthese"
     if "montant" in q or "combien" in q:
         return "combien"
     if "quand" in q or "date" in q:
         return "quand"
-    # ... ajoute d'autres rÃ¨gles ici au besoin
+    # ... ajoute d'autres règles ici au besoin
     return "par_defaut"
 
 def get_prompt_for_intention(intention: str) -> PromptTemplate:
     templates = {
         "copie": """
-Tu dois simplement recopier le texte du document entre <DOCUMENTS> et </DOCUMENTS> ci-dessous, sans rien omettre. Ne reformule rien, ne change pas l'ordre, ne saute rien. Si le texte est trop long, copie tout ce qui est affichÃ©.
+Tu dois simplement recopier le texte du document entre <DOCUMENTS> et </DOCUMENTS> ci-dessous, sans rien omettre. Ne reformule rien, ne change pas l'ordre, ne saute rien. Si le texte est trop long, copie tout ce qui est affiché.
 <DOCUMENTS>
 {context}
 </DOCUMENTS>
-Recopie intÃ©graleÂ :
+Recopie intégrale :
 """,
         "synthese": """
 Tu es un expert en analyse documentaire.
@@ -41,7 +41,7 @@ Tu es un expert en analyse documentaire.
 {context}
 </DOCUMENTS>
 Question : {question}
-RÃ©ponse :
+Réponse :
 """,
         "combien": """
 Tu es un assistant financier.
@@ -49,7 +49,7 @@ Tu es un assistant financier.
 {context}
 </DOCUMENTS>
 Question : {question}
-RÃ©ponse :
+Réponse :
 """,
         "quand": """
 Tu es un assistant temporel.
@@ -57,18 +57,18 @@ Tu es un assistant temporel.
 {context}
 </DOCUMENTS>
 Question : {question}
-RÃ©ponse :
+Réponse :
 """,
-        # Prompt par dÃ©faut renforcÃ©
+        # Prompt par défaut renforcé
         "par_defaut": """
-Tu es un assistant juridique. Tu dois toujours rÃ©pondre, mÃªme si l'information n'est pas complÃ¨te.
-Si tu ne trouves pas la rÃ©ponse exacte, produis la meilleure synthÃ¨se possible Ã  partir du contexte ci-dessous. Ne rÃ©ponds jamais "je ne sais pas" ni "dÃ©solÃ©".
+Tu es un assistant juridique. Tu dois toujours répondre, même si l'information n'est pas complète.
+Si tu ne trouves pas la réponse exacte, produis la meilleure synthèse possible à partir du contexte ci-dessous. Ne réponds jamais "je ne sais pas" ni "désolé".
 
 <DOCUMENTS>
 {context}
 </DOCUMENTS>
 Question : {question}
-RÃ©ponse :
+Réponse :
 """
     }
     tpl = templates.get(intention, templates["par_defaut"])
@@ -88,22 +88,22 @@ def answer_with_rag(question: str, top_k: int = 8, user: str = None) -> dict:
     # Selon ta version de langchain-core, tu peux utiliser invoke() (synchrone) ou ainvoke() (async)
     retrieved_docs = retriever.invoke(question)
 
-    print("\n=== Chunks retrouvÃ©s pour la question:", question)
+    print("\n=== Chunks retrouvés pour la question:", question)
     if not retrieved_docs:
-        print("!!! Aucun chunk retrouvÃ©")
+        print("!!! Aucun chunk retrouvé")
     for doc in retrieved_docs:
         print("---", doc.page_content[:200])
 
     if not settings.OPENAI_API_KEY:
-        return {"answer": "", "sources": [], "entities": {}, "error": "OPENAI_API_KEY non configurÃ©e"}
+        return {"answer": "", "sources": [], "entities": {}, "error": "OPENAI_API_KEY non configurée"}
 
-    # --- chaÃ®ne RAG ---
+    # --- chaîne RAG ---
     intention = detect_intention(question)
     prompt = get_prompt_for_intention(intention)
 
-    # Affiche le prompt rÃ©el (simulateur "ce que voit le LLM")
+    # Affiche le prompt réel (simulateur "ce que voit le LLM")
     ctx_concat = "\n".join([d.page_content for d in retrieved_docs])
-    print("\n=== PROMPT FINAL ENVOYÃ‰ AU LLM ===")
+    print("\n=== PROMPT FINAL ENVOYÉ AU LLM ===")
     print(prompt.format(context=ctx_concat, question=question))
 
     llm = OpenAI(temperature=0, openai_api_key=settings.OPENAI_API_KEY)
@@ -118,11 +118,11 @@ def answer_with_rag(question: str, top_k: int = 8, user: str = None) -> dict:
     print("\n=== RAW RESULT DE LLM ===")
     print(result)
 
-    # SÃ©curitÃ©Â : vÃ©rifie la prÃ©sence de "result" (peut varier selon version)
+    # Sécurité : vérifie la présence de "result" (peut varier selon version)
     answer = result.get("result", "")
     docs = result.get("source_documents", [])
 
-    # DEBUGÂ : affiche le contexte passÃ© effectivement au LLM (source_documents)
+    # DEBUG : affiche le contexte passé effectivement au LLM (source_documents)
     print("\n=== CONTEXT EFFECTIVEMENT PASSE AU LLM ===")
     for d in docs:
         print(d.page_content[:400])

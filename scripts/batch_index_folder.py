@@ -1,4 +1,4 @@
-﻿import os
+import os
 import logging
 from core.file_parser import extract_text_and_metadata
 from pipelines.vectorize import store_text_in_qdrant  # Adapté à ta brique vectorisation

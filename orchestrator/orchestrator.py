@@ -1,4 +1,4 @@
-﻿import pkgutil
+import pkgutil
 import importlib
 import agents
 from agents.base import Agent
@@ -62,8 +62,8 @@ class Orchestrator:
                     if agent.can_handle(question, ctx):
                         return await agent.run(question, ctx)
 
-        # ---- Extraction prioritaire (intention ou mots-clÃ©s)
-        entity_intents = ("entitÃ©", "montant", "date", "personne", "extrait", "extraire", "noms", "entreprise")
+        # ---- Extraction prioritaire (intention ou mots-clés)
+        entity_intents = ("entité", "montant", "date", "personne", "extrait", "extraire", "noms", "entreprise")
         if any(e in intention for e in entity_intents) or any(e in question.lower() for e in entity_intents):
             for agent in self.agents:
                 if "extraction" in agent.__class__.__name__.lower():
@@ -82,11 +82,11 @@ class Orchestrator:
                     except Exception:
                         continue
 
-        # ---- Recherche forcÃ©e (keywords, passages, etc.)
+        # ---- Recherche forcée (keywords, passages, etc.)
         if intention in ("recherche", "keyword", "passage"):
             ctx["force_search"] = True
 
-        # ---- Boucle principale : le premier agent qui rÃ©pond â€œgagneâ€
+        # ---- Boucle principale : le premier agent qui répond "gagne"
         for agent in self.agents:
             try:
                 if agent.can_handle(question, ctx):
@@ -105,13 +105,13 @@ class Orchestrator:
 
         # ---- Fallback final
         return {
-            "answer": "DÃ©solÃ©, je ne sais pas rÃ©pondre.",
+            "answer": "Désolé, je ne sais pas répondre.",
             "sources": [],
             "entities": {}
         }
 
     def _get_agent_class(self, name):
-        """Retourne la classe d'agent Ã  partir de son nom."""
+        """Retourne la classe d'agent à partir de son nom."""
         for agent in self.agents:
             if agent.__class__.__name__ == name:
                 return agent.__class__

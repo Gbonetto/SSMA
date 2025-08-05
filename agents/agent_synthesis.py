@@ -1,13 +1,13 @@
-﻿# agents/agent_synthesis.py
+# agents/agent_synthesis.py
 from .base import Agent
 from pipelines.rag_chain import answer_with_rag
 
 class SynthesisAgent(Agent):
     """
-    Agent principal pour la RAG : synthÃ¨se et rÃ©ponses via LangChain + Qdrant.
+    Agent principal pour la RAG : synthèse et réponses via LangChain + Qdrant.
     """
     def can_handle(self, question: str, context: dict) -> bool:
-        # Pour lâ€™instant, remonte toujours en premier
+        # Pour l’instant, remonte toujours en premier
         return True
 
     async def run(self, question: str, context: dict) -> dict:

@@ -1,4 +1,4 @@
-﻿from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request
 from api.debug import router as debug_router
 from api.admin import router as admin_router       # <--- ADMIN
 from pydantic import BaseModel
@@ -56,10 +56,10 @@ async def query_endpoint(request: Request):
             question = body.get("question")
             session_id = body.get("session_id", "default")
         except Exception as e2:
-            raise HTTPException(status_code=400, detail="Impossible de parser le body JSON envoyÃ©.")
+            raise HTTPException(status_code=400, detail="Impossible de parser le body JSON envoyé.")
 
     if not question or not str(question).strip():
-        raise HTTPException(status_code=422, detail="La question ne peut pas Ãªtre vide")
+        raise HTTPException(status_code=422, detail="La question ne peut pas être vide")
 
     # ----- AUTO-EVAL -----
     result = await orch.handle(question, session_id)
@@ -70,7 +70,7 @@ async def query_endpoint(request: Request):
         from core.logging import log_auto_eval
         log_auto_eval(question, result.get("answer", ""), eval_result, session_id)
     except Exception as e:
-        result["auto_eval"] = {"pertinence": -1, "clarte": -1, "commentaire": f"Auto-Ã©val KO: {e}"}
+        result["auto_eval"] = {"pertinence": -1, "clarte": -1, "commentaire": f"Auto-éval KO: {e}"}
     return result
 
 # ---------- User Feedback ----------

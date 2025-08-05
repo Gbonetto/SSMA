@@ -1,4 +1,4 @@
-﻿# scripts/ingest.py
+# scripts/ingest.py
 import sys
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, VectorParams
@@ -7,7 +7,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema import Document
 
-# Configuration Qdrantâ€‰â€“â€‰vous pouvez aussi importer core.config.settings
+# Configuration Qdrant – vous pouvez aussi importer core.config.settings
 QDRANT_URL = "http://localhost:6333"
 COLLECTION = "docs"
 EMBEDDING_SIZE = 384

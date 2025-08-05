@@ -1,4 +1,4 @@
-﻿# core/context_manager.py
+# core/context_manager.py
 
 from typing import Dict, Any, List, Optional
 
@@ -6,10 +6,10 @@ class ContextManager:
     """
     ContextManager Excellence+ pour SMA-RAG :
     - Historique des questions (multi-session)
-    - Gestion et fusion des entitÃ©s extraites
-    - RÃ©sumÃ©s contextuels (pour long memory ou synthÃ¨se)
+    - Gestion et fusion des entités extraites
+    - Résumés contextuels (pour long memory ou synthèse)
     - Variables temporaires par session (user, top_k, flags, etc.)
-    - DerniÃ¨res sources trouvÃ©es (pour extraction, rerank, feedback)
+    - Dernières sources trouvées (pour extraction, rerank, feedback)
     - Stockage du texte complet du doc (pour extraction full-doc)
     """
 
@@ -18,8 +18,8 @@ class ContextManager:
 
     def get(self, session_id: str, question: Optional[str] = None) -> Dict[str, Any]:
         """
-        RÃ©cupÃ¨re/crÃ©e un contexte de session.
-        Ajoute la question Ã  l'historique si fournie.
+        Récupère/crée un contexte de session.
+        Ajoute la question à l'historique si fournie.
         """
         if session_id not in self.sessions:
             self.sessions[session_id] = {
@@ -35,7 +35,7 @@ class ContextManager:
             session["history"].append(question)
         return session
 
-    # EntitÃ©s : gestion avancÃ©e
+    # Entités : gestion avancée
     def set_entity(self, session_id: str, key: str, value: Any):
         ctx = self.get(session_id)
         ctx["entities"][key] = value
@@ -44,7 +44,7 @@ class ContextManager:
         ctx = self.get(session_id)
         for k, v in entities.items():
             if k in ctx["entities"] and isinstance(ctx["entities"][k], list) and isinstance(v, list):
-                # Fusionne et dÃ©duplique (liste)
+                # Fusionne et déduplique (liste)
                 ctx["entities"][k] = list(set(ctx["entities"][k] + v))
             else:
                 ctx["entities"][k] = v
@@ -53,7 +53,7 @@ class ContextManager:
         ctx = self.get(session_id)
         ctx["entities"] = {}
 
-    # RÃ©sumÃ©s de contexte (long memory, synthÃ¨ses)
+    # Résumés de contexte (long memory, synthèses)
     def add_context_summary(self, session_id: str, summary: str):
         ctx = self.get(session_id)
         ctx["context_summaries"].append(summary)

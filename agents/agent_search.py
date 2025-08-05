@@ -1,13 +1,13 @@
-﻿# agents/agent_search.py
+# agents/agent_search.py
 from .base import Agent
 from pipelines.hybrid_retrieval import hybrid_search
 
-MIN_CONFIDENCE = 1.2  # Ajuste ce seuil aprÃ¨s test terrain, 1.2/1.5/2 selon le modÃ¨le
+MIN_CONFIDENCE = 1.2  # Ajuste ce seuil après test terrain, 1.2/1.5/2 selon le modèle
 
 class SearchAgent(Agent):
     def can_handle(self, question: str, context: dict) -> bool:
         q = question.lower()
-        keywords = ["trouve", "cherche", "mot-clÃ©", "passage", "extrait", "article", "page"]
+        keywords = ["trouve", "cherche", "mot-clé", "passage", "extrait", "article", "page"]
         return any(kw in q for kw in keywords) or context.get("force_search", False)
 
     async def run(self, question: str, context: dict) -> dict:
@@ -20,20 +20,20 @@ class SearchAgent(Agent):
             if score is not None:
                 res["score"] = round(score, 4)
 
-        # Si aucun rÃ©sultat ou confiance trop basse, ne pas halluciner :
+        # Si aucun résultat ou confiance trop basse, ne pas halluciner :
         if not search_results or search_results[0].get("rerank_score", 0) < MIN_CONFIDENCE:
             context["sources"] = []
             return {
-                "answer": "Aucun passage rÃ©ellement pertinent nâ€™a Ã©tÃ© trouvÃ© dans vos documents.",
+                "answer": "Aucun passage réellement pertinent n’a été trouvé dans vos documents.",
                 "sources": [],
                 "entities": {}
             }
 
-        # Sinon, push dans le contexte pour extraction dâ€™entitÃ©s, synthÃ¨se, etc.
+        # Sinon, push dans le contexte pour extraction d’entités, synthèse, etc.
         context["sources"] = search_results
 
         return {
-            "answer": "RÃ©sultats rerankÃ©s et pertinents (mode SearchAgent)",
+            "answer": "Résultats rerankés et pertinents (mode SearchAgent)",
             "sources": search_results,
             "entities": {}
         }

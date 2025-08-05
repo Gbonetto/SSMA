@@ -1,9 +1,9 @@
-﻿import re
+import re
 import spacy
 import langdetect
 
 # ========================
-# Chargement des modÃ¨les spaCy
+# Chargement des modèles spaCy
 # ========================
 _SPACY_MODELS = {}
 
@@ -21,13 +21,13 @@ def get_spacy_model(lang):
     return _SPACY_MODELS[lang]
 
 # ========================
-# DÃ©tection de langue
+# Détection de langue
 # ========================
 def detect_lang(text):
     try:
         return langdetect.detect(text)
     except Exception:
-        return "fr"  # Fallback franÃ§ais
+        return "fr"  # Fallback français
 
 # ========================
 # Extraction par regex
@@ -35,7 +35,7 @@ def detect_lang(text):
 def extract_montants(text):
     if not text:
         return []
-    pattern = r"(\d{1,3}(?:[\s.,]\d{3})*(?:[.,]\d+)?\s*(?:â‚¬|euros?|dollars?|\$))"
+    pattern = r"(\d{1,3}(?:[\s.,]\d{3})*(?:[.,]\d+)?\s*(?:€|euros?|dollars?|\$))"
     found = re.findall(pattern, text.replace('\xa0', ' ').replace('\n', ' '))
     return [m.strip() for m in found]
 
@@ -68,8 +68,8 @@ def fallback_llm_extract(text, llm_func=None):
     if not llm_func:
         return {}
     prompt = (
-        "Extrait tous les montants (â‚¬, euros, $), dates, personnes, et entreprises du texte suivant. "
-        "RÃ©ponds uniquement au format JSON avec les clÃ©s 'montants', 'dates', 'PER', 'ORG'.\n\n"
+        "Extrait tous les montants (€, euros, $), dates, personnes, et entreprises du texte suivant. "
+        "Réponds uniquement au format JSON avec les clés 'montants', 'dates', 'PER', 'ORG'.\n\n"
         f"TEXTE:\n{text}\n"
     )
     try:
@@ -88,7 +88,7 @@ def fallback_llm_extract_persons(text, openai_api_key):
     import openai
     prompt = (
         "Tu es un expert du traitement documentaire. "
-        "Extrais la liste des personnes physiques citÃ©es dans ce texte :\n"
+        "Extrais la liste des personnes physiques citées dans ce texte :\n"
         f"{text}\n"
         "Donne uniquement la liste, sans commentaire, sous forme JSON : { \"persons\": [ ... ] }"
     )
@@ -138,7 +138,7 @@ def extract_all_entities(
             if k in llm_ents and not entities.get(k):
                 entities[k] = llm_ents[k]
 
-    # Fallback LLM OpenAI spÃ©cifique personnes si toujours rien
+    # Fallback LLM OpenAI spécifique personnes si toujours rien
     if openai_api_key and (not entities.get("PER") or len(entities.get("PER", [])) == 0):
         persons = fallback_llm_extract_persons(text, openai_api_key)
         if persons:

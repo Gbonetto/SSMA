@@ -1,4 +1,4 @@
-﻿from qdrant_client import QdrantClient
+from qdrant_client import QdrantClient
 
 QDRANT_URL = "http://localhost:6333"
 QDRANT_COLLECTION = "docs"

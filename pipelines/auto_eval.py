@@ -1,36 +1,36 @@
-﻿# pipelines/auto_eval.py
+# pipelines/auto_eval.py
 import openai
 import os
 
 def auto_eval_llm(question, answer, sources):
     """
-    Utilise GPT-4 (ou GPT-3.5) pour scorer automatiquement la pertinence et la clartÃ© dâ€™une rÃ©ponse.
-    NÃ‰CESSITE la variable d'env OPENAI_API_KEY.
+    Utilise GPT-4 (ou GPT-3.5) pour scorer automatiquement la pertinence et la clarté d’une réponse.
+    NÉCESSITE la variable d'env OPENAI_API_KEY.
     """
     openai.api_key = os.environ.get("OPENAI_API_KEY")
     if not openai.api_key:
-        raise RuntimeError("OPENAI_API_KEY non trouvÃ©e dans l'environnement.")
+        raise RuntimeError("OPENAI_API_KEY non trouvée dans l'environnement.")
     prompt = f"""
-Tu es un Ã©valuateur professionnel pour un assistant IA.
+Tu es un évaluateur professionnel pour un assistant IA.
 Question :
 {question}
 
-RÃ©ponse gÃ©nÃ©rÃ©e :
+Réponse générée :
 {answer}
 
-Sources utilisÃ©es :
+Sources utilisées :
 {sources}
 
-Donne une note sur 10 Ã  la pertinence, une note sur 10 Ã  la clartÃ©, et un commentaire (bref) en JSON strict :
+Donne une note sur 10 à la pertinence, une note sur 10 à la clarté, et un commentaire (bref) en JSON strict :
 {{
   "pertinence": int,
   "clarte": int,
   "commentaire": str
 }}
-RÃ©ponds uniquement en JSON.
+Réponds uniquement en JSON.
 """
     response = openai.ChatCompletion.create(
-        model="gpt-4",   # Ou "gpt-3.5-turbo" si tu veux rÃ©duire le coÃ»t
+        model="gpt-4",   # Ou "gpt-3.5-turbo" si tu veux réduire le coût
         messages=[{"role": "user", "content": prompt}],
         max_tokens=200
     )
