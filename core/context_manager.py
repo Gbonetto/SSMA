@@ -1,5 +1,3 @@
-# core/context_manager.py
-
 """Context management and storage backends.
 
 This module introduces a ``BaseContextStore`` interface with two concrete
@@ -82,7 +80,7 @@ class InMemoryContextStore(BaseContextStore):
             self.sessions[session_id] = _default_session()
         return self.sessions[session_id]
 
-    def save(self, session_id: str, data: Dict[str, Any]) -> None:  # pragma: no cover - simple assignment
+    def save(self, session_id: str, data: Dict[str, Any]) -> None:
         self.sessions[session_id] = data
 
     def clear(self, session_id: str) -> None:
@@ -231,4 +229,3 @@ class ContextManager:
     # --- Reset -------------------------------------------------------
     def clear(self, session_id: str) -> None:
         self.store.clear(session_id)
-

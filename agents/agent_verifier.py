@@ -3,7 +3,6 @@
 from .base import Agent
 from pipelines.auto_eval import auto_eval_llm
 
-
 class VerifierAgent(Agent):
     """Run a post-generation evaluation on the last answer."""
 

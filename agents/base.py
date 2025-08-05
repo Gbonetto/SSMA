@@ -12,7 +12,7 @@ class Agent(ABC):
     @abstractmethod
     async def run(self, question: str, context: dict) -> dict:
         """
-        ExÃ©cute la logique de lâ€™agent et retourne un dict :
+        Exécute la logique de l’agent et retourne un dict :
         {
           "answer": str,
           "sources": list[dict],

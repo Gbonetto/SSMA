@@ -1,6 +1,5 @@
 import os
 import shutil
-import logging
 from core.logging import get_logger
 from qdrant_client import QdrantClient
 
@@ -30,4 +29,4 @@ if os.path.isdir(whoosh_dir):
 else:
     logger.info("ℹ️ Dossier Whoosh index '%s' inexistant (déjà clean)", whoosh_dir)
 
-logger.info("\n🎯 RESET ALL terminé. Tu peux relancer tes imports !")
+logger.info("🎯 RESET ALL terminé. Tu peux relancer tes imports !")

@@ -1,6 +1,5 @@
 # scripts/ingest.py
 import sys
-import logging
 from core.logging import get_logger
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, VectorParams
@@ -11,7 +10,7 @@ from langchain.schema import Document
 
 logger = get_logger(__name__)
 
-# Configuration Qdrantâ€‰â€“â€‰vous pouvez aussi importer core.config.settings
+# Configuration Qdrant
 QDRANT_URL = "http://localhost:6333"
 COLLECTION = "docs"
 EMBEDDING_SIZE = 384
@@ -22,7 +21,7 @@ def get_embeddings():
     )
 
 def ingest_text(text: str, metadata: dict = {}):
-    # Split & vectorise
+    # Split & vectorize
     splitter = RecursiveCharacterTextSplitter(chunk_size=400, chunk_overlap=50)
     chunks = splitter.split_text(text)
     docs = [
@@ -30,19 +29,17 @@ def ingest_text(text: str, metadata: dict = {}):
         for idx, chunk in enumerate(chunks)
     ]
 
-    # (Re)création manuelle de la collection
+    # (Re)create collection
     client = QdrantClient(url=QDRANT_URL)
-    # Supprime si existe
     existing = [col.name for col in client.get_collections().collections]
     if COLLECTION in existing:
         client.delete_collection(collection_name=COLLECTION)
-    # Crée à  nouveau
     client.create_collection(
         collection_name=COLLECTION,
         vectors_config=VectorParams(size=EMBEDDING_SIZE, distance=Distance.COSINE)
     )
 
-    # Ajouter les docs
+    # Add documents
     vectorstore = Qdrant(client=client, collection_name=COLLECTION, embeddings=get_embeddings())
     vectorstore.add_documents(docs)
     logger.info("Ingested %d chunks into '%s'.", len(docs), COLLECTION)
@@ -60,6 +57,3 @@ if __name__ == "__main__":
         sys.exit(1)
 
     ingest_text(raw, {"source": path})
-
-
-

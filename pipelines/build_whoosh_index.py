@@ -1,6 +1,5 @@
 import sys
 import os
-import logging
 from core.logging import get_logger
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -19,7 +18,6 @@ def build_schema():
     return Schema(id=ID(stored=True, unique=True), content=TEXT(stored=True))
 
 def get_all_docs_from_qdrant():
-    # Utilise Qdrant pour rÃ©cupÃ©rer tous les passages dÃ©jÃ  vectorisÃ©s
     embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
     client = QdrantClient(url=settings.QDRANT_URL)
     vectorstore = Qdrant(
@@ -27,8 +25,8 @@ def get_all_docs_from_qdrant():
         collection_name=settings.QDRANT_COLLECTION,
         embeddings=embeddings,
     )
-    # RÃ©cupÃ©rer tout (attention Ã  la volumÃ©trie)
-    docs = vectorstore.similarity_search(" ", k=10000)  # " " = match all (pas optimal mais fait le job)
+    # " " = match all (simule une recherche large, à optimiser si trop volumineux)
+    docs = vectorstore.similarity_search(" ", k=10000)
     return docs
 
 def build_index():
@@ -49,6 +47,3 @@ def build_index():
 
 if __name__ == "__main__":
     build_index()
-
-
-

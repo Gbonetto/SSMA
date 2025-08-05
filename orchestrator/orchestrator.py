@@ -8,7 +8,6 @@ from agents.agent_verifier import VerifierAgent
 from pipelines.auto_eval import auto_eval_llm
 from core import event_stream
 
-
 class Orchestrator:
     def __init__(self):
         self.context = ContextManager()
@@ -27,7 +26,6 @@ class Orchestrator:
 
     def _ordered_agents(self) -> list[Agent]:
         all_agents = self._load_agents()
-
         def agent_priority(agent):
             cname = agent.__class__.__name__.lower()
             if "extraction" in cname:
@@ -41,7 +39,6 @@ class Orchestrator:
             if "n8n" in cname:
                 return 4
             return 5
-
         return sorted(all_agents, key=agent_priority)
 
     async def handle(self, question: str, session_id: str = "default", context_override: dict | None = None) -> dict:

@@ -22,7 +22,7 @@ LOGS_DIR = os.path.join(os.path.dirname(__file__), "../logs")
 os.makedirs(LOGS_DIR, exist_ok=True)
 FEEDBACK_CSV = os.path.join(LOGS_DIR, "feedback.csv")
 INTERACTIONS_CSV = os.path.join(LOGS_DIR, "interactions.csv")
-REQUESTS_LOG = os.path.join(LOGS_DIR, "requests.log")  # AjoutÃ©
+REQUESTS_LOG = os.path.join(LOGS_DIR, "requests.log")  # Ajouté
 
 def log_auto_eval(question, answer, eval_result, session_id="default"):
     import os, csv

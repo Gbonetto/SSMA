@@ -22,7 +22,7 @@ def ensure_qdrant_collection(client, collection_name=QDRANT_COLLECTION, embeddin
     try:
         exists = any(col.name == collection_name for col in client.get_collections().collections)
         if not exists:
-            logging.info(f"CrÃ©ation de la collection Qdrant '{collection_name}' (size={embedding_size})")
+            logging.info(f"Création de la collection Qdrant '{collection_name}' (size={embedding_size})")
             client.create_collection(
                 collection_name=collection_name,
                 vectors_config=VectorParams(size=embedding_size, distance=Distance.COSINE)
@@ -33,17 +33,17 @@ def ensure_qdrant_collection(client, collection_name=QDRANT_COLLECTION, embeddin
 
 def store_text_in_qdrant(text: str, metadata: dict = {}) -> int:
     """
-    DÃ©coupe le texte, embed chaque chunk, indexe dans Qdrant avec metadata.
-    Retourne le nombre de chunks ajoutÃ©s.
+    Découpe le texte, embed chaque chunk, indexe dans Qdrant avec metadata.
+    Retourne le nombre de chunks ajoutés.
     """
     if not text or not text.strip():
-        raise ValueError("Texte vide, rien Ã  indexer.")
+        raise ValueError("Texte vide, rien à indexer.")
     splitter = RecursiveCharacterTextSplitter(chunk_size=400, chunk_overlap=50)
     chunks = splitter.split_text(text)
     if not chunks:
-        raise ValueError("DÃ©coupage impossible ou texte trop court.")
+        raise ValueError("Découpage impossible ou texte trop court.")
     
-    # Ajoute l'index de chunk Ã  chaque meta
+    # Ajoute l'index de chunk à chaque meta
     docs = []
     for idx, chunk in enumerate(chunks):
         meta_chunk = metadata.copy()
@@ -65,7 +65,7 @@ def store_text_in_qdrant(text: str, metadata: dict = {}) -> int:
             embeddings=embeddings,
         )
         vectorstore.add_documents(langchain_docs)
-        logging.info(f"{len(langchain_docs)} chunks ajoutÃ©s Ã  la collection '{QDRANT_COLLECTION}'.")
+        logging.info(f"{len(langchain_docs)} chunks ajoutés à la collection '{QDRANT_COLLECTION}'.")
         return len(langchain_docs)
     except Exception as e:
         logging.error(f"Erreur ajout dans Qdrant : {e}")

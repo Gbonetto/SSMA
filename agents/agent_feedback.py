@@ -10,7 +10,7 @@ class FeedbackAgent(Agent):
         """
         Format attendu :
             feedback:<answer_id>:<statut>:<commentaire>
-            Exemple : feedback:abc123:utile:Bonne rÃ©ponse !
+            Exemple : feedback:abc123:utile:Bonne réponse !
         """
         parts = question.split(":", 3)
         if len(parts) != 4:
@@ -23,10 +23,10 @@ class FeedbackAgent(Agent):
         _, answer_id, status, comment = parts
         status = status.lower()
         if status not in ["utile", "inutile"]:
-            return {"answer": "Statut de feedback non reconnu (utile|inutile autorisÃ©s)"}
+            return {"answer": "Statut de feedback non reconnu (utile|inutile autorisés)"}
         user = context.get("user", "anonymous")
         log_feedback(answer_id, status, comment, user)
-        return {"answer": f"Feedback reÃ§u pour {answer_id} ({status})"}
+        return {"answer": f"Feedback reçu pour {answer_id} ({status})"}
 
 
 

@@ -53,11 +53,11 @@ def keyword_search(query: str, top_k=10):
     return results
 
 def hybrid_search(query: str, top_k=7):
-    # 1. On rÃ©cupÃ¨re plus large pour un vrai reranking (x2 top_k)
+    # 1. On récupère plus large pour un vrai reranking (x2 top_k)
     semantic_results = semantic_search(query, top_k=top_k*2)
     keyword_results = keyword_search(query, top_k=top_k*2)
 
-    # 2. Fusion & dÃ©duplication (on conserve le maximum de diversitÃ©)
+    # 2. Fusion & déduplication (on conserve le maximum de diversité)
     all_results = semantic_results + keyword_results
     seen = set()
     unique_results = []

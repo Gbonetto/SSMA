@@ -49,7 +49,7 @@ class QueryRequest(BaseModel):
 @log_endpoint
 async def query_endpoint(payload: QueryRequest):
     if not payload.question or not str(payload.question).strip():
-        raise HTTPException(status_code=422, detail="La question ne peut pas Ãªtre vide")
+        raise HTTPException(status_code=422, detail="La question ne peut pas être vide")
 
     session_id = payload.session_id or "default"
 
@@ -62,7 +62,7 @@ async def query_endpoint(payload: QueryRequest):
         from core.logging import log_auto_eval
         log_auto_eval(payload.question, result.get("answer", ""), eval_result, session_id)
     except Exception as e:
-        result["auto_eval"] = {"pertinence": -1, "clarte": -1, "commentaire": f"Auto-Ã©val KO: {e}"}
+        result["auto_eval"] = {"pertinence": -1, "clarte": -1, "commentaire": f"Auto-éval KO: {e}"}
     return result
 
 # ---------- User Feedback ----------
@@ -99,9 +99,7 @@ def health():
 app.include_router(debug_router)
 app.include_router(admin_router)     # /admin/feedback et /admin/auto_eval
 
-
 # ---------- Event streaming ----------
-
 @app.get("/events")
 async def events():
     queue = event_stream.register()
@@ -118,12 +116,7 @@ async def events():
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
-
 @app.get("/live")
 async def live_page():
     html_path = Path(__file__).with_name("live.html")
     return HTMLResponse(html_path.read_text(encoding="utf-8"))
-
-
-
-

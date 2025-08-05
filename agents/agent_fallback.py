@@ -1,6 +1,5 @@
 from .base import Agent
 
-
 class FallbackAgent(Agent):
     """Agent de repli final utilisé lorsque les autres échouent."""
 

@@ -3,7 +3,7 @@ import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import numpy as np
 
-# TÃ©lÃ©charge le modÃ¨le au premier appel
+# Télécharge le modèle au premier appel
 class BGEReranker:
     def __init__(self, model_name="BAAI/bge-reranker-base"):
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
