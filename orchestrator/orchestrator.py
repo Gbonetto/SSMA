@@ -4,13 +4,16 @@ import agents
 from agents.base import Agent
 from core.context_manager import ContextManager
 from pipelines.rag_chain import detect_intention
-from pipelines.auto_eval import auto_eval_llm  # <-- IMPORT AUTO-EVAL
+from agents.agent_verifier import VerifierAgent
+from pipelines.auto_eval import auto_eval_llm
+from core import event_stream
 
 
 class Orchestrator:
     def __init__(self):
         self.context = ContextManager()
         self.agents: list[Agent] = self._ordered_agents()
+        self.verifier = VerifierAgent()
 
     def _load_agents(self) -> list[Agent]:
         agents_list: list[Agent] = []
@@ -51,31 +54,76 @@ class Orchestrator:
         intention = detect_intention(question)
         ctx["intention"] = intention
 
+        # ---- PlannerAgent
+        planner_cls = self._get_agent_class("PlannerAgent")
+        planner_agent = None
+        for ag in self.agents:
+            if isinstance(ag, planner_cls):
+                planner_agent = ag
+                break
+        agents_sequence = [ag for ag in self.agents if not isinstance(ag, planner_cls)]
+        if planner_agent:
+            plan_info = await planner_agent.run(question, ctx)
+            ctx["plan"] = plan_info.get("plan", [])
+            ctx.setdefault("reasoning", []).append(plan_info.get("reasoning", ""))
+            ordered_names = plan_info.get("plan", [])
+            agents_sequence = sorted(
+                agents_sequence,
+                key=lambda a: ordered_names.index(a.__class__.__name__)
+                if a.__class__.__name__ in ordered_names else len(ordered_names)
+            )
+        else:
+            ctx.setdefault("reasoning", [])
+
         # ---- FeedbackAgent (feedback:xxx)
         if question.lower().startswith("feedback:"):
-            for agent in self.agents:
+            for agent in agents_sequence:
                 if "feedback" in agent.__class__.__name__.lower():
                     if agent.can_handle(question, ctx):
-                        return await agent.run(question, ctx)
+                        await event_stream.broadcast({"type": "agent_start", "agent": agent.__class__.__name__})
+                        result = await agent.run(question, ctx)
+                        await event_stream.broadcast({
+                            "type": "agent_result",
+                            "agent": agent.__class__.__name__,
+                            "sources": result.get("sources", []),
+                            "score": result.get("score")
+                        })
+                        return result
 
         # ---- N8NWebhookAgent
         if question == "__n8n_webhook__" or ctx.get("n8n", False):
-            for agent in self.agents:
+            for agent in agents_sequence:
                 if "n8n" in agent.__class__.__name__.lower():
                     if agent.can_handle(question, ctx):
-                        return await agent.run(question, ctx)
+                        await event_stream.broadcast({"type": "agent_start", "agent": agent.__class__.__name__})
+                        result = await agent.run(question, ctx)
+                        await event_stream.broadcast({
+                            "type": "agent_result",
+                            "agent": agent.__class__.__name__,
+                            "sources": result.get("sources", []),
+                            "score": result.get("score")
+                        })
+                        return result
 
         # ---- Extraction prioritaire (intention ou mots-clés)
         entity_intents = ("entité", "montant", "date", "personne", "extrait", "extraire", "noms", "entreprise")
         if any(e in intention for e in entity_intents) or any(e in question.lower() for e in entity_intents):
-            for agent in self.agents:
+            for agent in agents_sequence:
                 if "extraction" in agent.__class__.__name__.lower():
                     try:
                         if agent.can_handle(question, ctx):
+                            await event_stream.broadcast({"type": "agent_start", "agent": agent.__class__.__name__})
                             result = await agent.run(question, ctx)
+                            await event_stream.broadcast({
+                                "type": "agent_result",
+                                "agent": agent.__class__.__name__,
+                                "sources": result.get("sources", []),
+                                "score": result.get("score")
+                            })
                             if result and result.get("answer"):
                                 ctx["last_answer"] = result.get("answer")
                                 ctx["sources"] = result.get("sources", [])
+                                ctx["reasoning"].append(f"{agent.__class__.__name__} a fourni une réponse.")
                                 # --- AUTO-EVAL (hors agents infra)
                                 if not isinstance(agent, (self._get_agent_class("FeedbackAgent"),
                                                           self._get_agent_class("N8NWebhookAgent"))):
@@ -89,32 +137,37 @@ class Orchestrator:
         if intention in ("recherche", "keyword", "passage"):
             ctx["force_search"] = True
 
-        # ---- Boucle principale : le premier agent qui renvoie une réponse gagne
-        for agent in self.agents:
-            # On ignore l'éventuel FallbackAgent ici; il sera appelé en dernier recours.
-            if "fallback" in agent.__class__.__name__.lower():
-                continue
+        # ---- Boucle principale : le premier agent qui répond “gagne”
+        for agent in agents_sequence:
             try:
                 if agent.can_handle(question, ctx):
+                    await event_stream.broadcast({"type": "agent_start", "agent": agent.__class__.__name__})
                     result = await agent.run(question, ctx)
+                    await event_stream.broadcast({
+                        "type": "agent_result",
+                        "agent": agent.__class__.__name__,
+                        "sources": result.get("sources", []),
+                        "score": result.get("score")
+                    })
                     if result and result.get("answer"):
                         ctx["last_answer"] = result.get("answer")
                         ctx["sources"] = result.get("sources", [])
-                        # --- AUTO-EVAL (hors agents infra)
-                        if not isinstance(agent, (self._get_agent_class("FeedbackAgent"),
-                                                  self._get_agent_class("N8NWebhookAgent"))):
+                        ctx["reasoning"].append(f"{agent.__class__.__name__} a fourni une réponse.")
+                        # -- Vérification pour SynthesisAgent uniquement --
+                        if isinstance(agent, self._get_agent_class("SynthesisAgent")):
+                            verification = await self.verifier.run(question, ctx)
+                            result["auto_eval"] = verification.get("auto_eval")
+                        # --- AUTO-EVAL (hors agents infra et hors SynthesisAgent qui passe déjà dans VerifierAgent)
+                        elif not isinstance(agent, (self._get_agent_class("FeedbackAgent"),
+                                                    self._get_agent_class("N8NWebhookAgent"))):
                             eval_result = auto_eval_llm(question, result["answer"], result.get("sources", []))
                             result["auto_eval"] = eval_result
                         return result
             except Exception:
                 continue
 
-        # ---- Fallback final via FallbackAgent s'il existe
-        for agent in self.agents:
-            if "fallback" in agent.__class__.__name__.lower():
-                return await agent.run(question, ctx)
-
-        # Aucun agent n'a pu répondre
+        # ---- Fallback final
+        await event_stream.broadcast({"type": "fallback"})
         return {
             "answer": "Désolé, je ne sais pas répondre.",
             "sources": [],

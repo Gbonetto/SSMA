@@ -1,5 +1,7 @@
 import sys
 import os
+import logging
+from core.logging import get_logger
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from whoosh.fields import Schema, TEXT, ID
@@ -8,6 +10,8 @@ from qdrant_client import QdrantClient
 from langchain_qdrant import Qdrant
 from langchain_huggingface import HuggingFaceEmbeddings
 from core.config import settings
+
+logger = get_logger(__name__)
 
 INDEX_DIR = os.path.join(os.path.dirname(__file__), "../whoosh_index")
 
@@ -37,11 +41,11 @@ def build_index():
 
     writer = ix.writer()
     docs = get_all_docs_from_qdrant()
-    print(f"Indexation Whoosh de {len(docs)} passages...")
+    logger.info("Indexation Whoosh de %d passages...", len(docs))
     for idx, doc in enumerate(docs):
         writer.add_document(id=str(idx), content=doc.page_content)
     writer.commit()
-    print("âœ… Index Whoosh crÃ©Ã©/mis Ã  jour.")
+    logger.info("✅ Index Whoosh créé/mis à jour.")
 
 if __name__ == "__main__":
     build_index()

@@ -1,6 +1,7 @@
 # pipelines/rag_chain.py
 
 import logging
+from core.logging import get_logger
 from qdrant_client import QdrantClient
 from langchain_qdrant import Qdrant  # Remplace l'ancien import deprecated
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -9,6 +10,8 @@ from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 
 from core.config import settings
+
+logger = get_logger(__name__)
 
 def get_embeddings():
     return HuggingFaceEmbeddings(model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
@@ -88,11 +91,11 @@ def answer_with_rag(question: str, top_k: int = 8, user: str = None) -> dict:
     # Selon ta version de langchain-core, tu peux utiliser invoke() (synchrone) ou ainvoke() (async)
     retrieved_docs = retriever.invoke(question)
 
-    print("\n=== Chunks retrouvÃ©s pour la question:", question)
+    logger.debug("\n=== Chunks retrouvés pour la question: %s", question)
     if not retrieved_docs:
-        print("!!! Aucun chunk retrouvÃ©")
+        logger.debug("!!! Aucun chunk retrouvé")
     for doc in retrieved_docs:
-        print("---", doc.page_content[:200])
+        logger.debug("--- %s", doc.page_content[:200])
 
     if not settings.OPENAI_API_KEY:
         return {"answer": "", "sources": [], "entities": {}, "error": "OPENAI_API_KEY non configurÃ©e"}
@@ -103,8 +106,8 @@ def answer_with_rag(question: str, top_k: int = 8, user: str = None) -> dict:
 
     # Affiche le prompt rÃ©el (simulateur "ce que voit le LLM")
     ctx_concat = "\n".join([d.page_content for d in retrieved_docs])
-    print("\n=== PROMPT FINAL ENVOYÃ‰ AU LLM ===")
-    print(prompt.format(context=ctx_concat, question=question))
+    logger.debug("\n=== PROMPT FINAL ENVOYÉ AU LLM ===")
+    logger.debug(prompt.format(context=ctx_concat, question=question))
 
     llm = OpenAI(temperature=0, openai_api_key=settings.OPENAI_API_KEY)
     qa = RetrievalQA.from_chain_type(
@@ -115,21 +118,21 @@ def answer_with_rag(question: str, top_k: int = 8, user: str = None) -> dict:
     )
     result = qa({"query": question})
 
-    print("\n=== RAW RESULT DE LLM ===")
-    print(result)
+    logger.debug("\n=== RAW RESULT DE LLM ===")
+    logger.debug(result)
 
     # SÃ©curitÃ©Â : vÃ©rifie la prÃ©sence de "result" (peut varier selon version)
     answer = result.get("result", "")
     docs = result.get("source_documents", [])
 
     # DEBUGÂ : affiche le contexte passÃ© effectivement au LLM (source_documents)
-    print("\n=== CONTEXT EFFECTIVEMENT PASSE AU LLM ===")
+    logger.debug("\n=== CONTEXT EFFECTIVEMENT PASSE AU LLM ===")
     for d in docs:
-        print(d.page_content[:400])
+        logger.debug(d.page_content[:400])
 
     # --- format de sortie basique ---
     sources = [{"text": d.page_content, "metadata": d.metadata} for d in docs]
-    logging.info(f"RAG >> question={question} answer={answer[:60]}...")
+    logger.info("RAG >> question=%s answer=%s...", question, answer[:60])
     return {"answer": answer, "sources": sources, "entities": {}}
 
 

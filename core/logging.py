@@ -4,6 +4,18 @@ from datetime import datetime
 import logging
 from functools import wraps
 
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+LOG_FORMAT = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+logging.basicConfig(
+    level=getattr(logging, LOG_LEVEL, logging.INFO),
+    format=LOG_FORMAT,
+)
+
+
+def get_logger(name: str = __name__) -> logging.Logger:
+    """Return a logger configured for this application."""
+    return logging.getLogger(name)
+
 # --- CSV LOGGING CLASSIQUE ---
 
 LOGS_DIR = os.path.join(os.path.dirname(__file__), "../logs")
@@ -53,8 +65,8 @@ def log_interaction(session_id, question, answer, agent, user=None, entities=Non
 # --- LOGGER API (requests.log) ---
 
 api_logger = logging.getLogger("sma_api_logger")
-api_logger.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(message)s')
+api_logger.setLevel(getattr(logging, LOG_LEVEL, logging.INFO))
+formatter = logging.Formatter(LOG_FORMAT)
 file_handler = logging.FileHandler(REQUESTS_LOG)
 file_handler.setFormatter(formatter)
 if not api_logger.handlers:
