@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+dist/
+build/
+
+# Virtual environment
+.venv/
+env/
+venv/
+ENV/
+.Python
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs et sorties
+*.log
+logs/
+*.csv
+
+# Données & modèles lourds
+data/
+datasets/
+*.sqlite3
+*.db
+*.pkl
+*.h5
+whoosh_index/
+*.pt
+*.pth
+*.bin
+*.ckpt
+
+# Fichiers secrets / env
+.env
+.env.*
+*.secret
+*.key
+
+# Jupyter & notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# VSCode/IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# NodeJS/Front (si jamais)
+node_modules/
+npm-debug.log
+
+# Qdrant/docker
+qdrant_storage/
+docker-compose.override.yml
+
+# Static/assets temporaires
+static/assets/
+uploads/
