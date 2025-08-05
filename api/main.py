@@ -7,6 +7,10 @@ from typing import Optional
 from core.logging import log_endpoint
 import json
 import time
+import asyncio
+from pathlib import Path
+from fastapi.responses import StreamingResponse, HTMLResponse
+from core import event_stream
 
 app = FastAPI(title="SMA-RAG Ultimate")
 orch = Orchestrator()
@@ -106,6 +110,31 @@ def health():
 # ---------- Admin & Debug ----------
 app.include_router(debug_router)
 app.include_router(admin_router)     # /admin/feedback et /admin/auto_eval
+
+
+# ---------- Event streaming ----------
+
+@app.get("/events")
+async def events():
+    queue = event_stream.register()
+
+    async def event_generator():
+        try:
+            while True:
+                data = await queue.get()
+                yield f"data: {data}\n\n"
+        except asyncio.CancelledError:
+            pass
+        finally:
+            event_stream.unregister(queue)
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+@app.get("/live")
+async def live_page():
+    html_path = Path(__file__).with_name("live.html")
+    return HTMLResponse(html_path.read_text(encoding="utf-8"))
 
 
 

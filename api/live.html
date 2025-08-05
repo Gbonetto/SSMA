@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<title>Flux d'exécution</title>
+<style>
+#chat {border:1px solid #ccc; padding:10px; height:300px; overflow-y:scroll;}
+</style>
+</head>
+<body>
+<h1>Flux d'exécution</h1>
+<div id="chat"></div>
+<script>
+const chat = document.getElementById('chat');
+const source = new EventSource('/events');
+source.onmessage = function(e) {
+  try {
+    const msg = JSON.parse(e.data);
+    const p = document.createElement('p');
+    p.textContent = `[${msg.type}] ${msg.agent || ''} ${msg.score !== undefined ? 'score: '+msg.score : ''} ${msg.sources ? 'sources: '+msg.sources.join(', ') : ''}`;
+    chat.appendChild(p);
+    chat.scrollTop = chat.scrollHeight;
+  } catch(err) {
+    console.error('Message invalide', err);
+  }
+};
+</script>
+</body>
+</html>

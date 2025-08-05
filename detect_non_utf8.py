@@ -1,4 +1,8 @@
 import os
+import logging
+from core.logging import get_logger
+
+logger = get_logger(__name__)
 
 root = "C:/Users/grego/Desktop/Dossiers/DisruptIQ/Codes/SSMA"
 non_utf8_files = []
@@ -13,6 +17,6 @@ for dirpath, _, filenames in os.walk(root):
             except UnicodeDecodeError:
                 non_utf8_files.append(filepath)
 
-print("Fichiers non UTF-8 :")
+logger.info("Fichiers non UTF-8 :")
 for f in non_utf8_files:
-    print(f)
+    logger.info(f)
