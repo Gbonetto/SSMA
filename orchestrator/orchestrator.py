@@ -5,6 +5,7 @@ from agents.base import Agent
 from core.context_manager import ContextManager
 from pipelines.rag_chain import detect_intention
 from pipelines.auto_eval import auto_eval_llm  # <-- IMPORT AUTO-EVAL
+from core import event_stream
 
 class Orchestrator:
     def __init__(self):
@@ -53,14 +54,30 @@ class Orchestrator:
             for agent in self.agents:
                 if "feedback" in agent.__class__.__name__.lower():
                     if agent.can_handle(question, ctx):
-                        return await agent.run(question, ctx)
+                        await event_stream.broadcast({"type": "agent_start", "agent": agent.__class__.__name__})
+                        result = await agent.run(question, ctx)
+                        await event_stream.broadcast({
+                            "type": "agent_result",
+                            "agent": agent.__class__.__name__,
+                            "sources": result.get("sources", []),
+                            "score": result.get("score")
+                        })
+                        return result
 
         # ---- N8NWebhookAgent
         if question == "__n8n_webhook__" or ctx.get("n8n", False):
             for agent in self.agents:
                 if "n8n" in agent.__class__.__name__.lower():
                     if agent.can_handle(question, ctx):
-                        return await agent.run(question, ctx)
+                        await event_stream.broadcast({"type": "agent_start", "agent": agent.__class__.__name__})
+                        result = await agent.run(question, ctx)
+                        await event_stream.broadcast({
+                            "type": "agent_result",
+                            "agent": agent.__class__.__name__,
+                            "sources": result.get("sources", []),
+                            "score": result.get("score")
+                        })
+                        return result
 
         # ---- Extraction prioritaire (intention ou mots-clÃ©s)
         entity_intents = ("entitÃ©", "montant", "date", "personne", "extrait", "extraire", "noms", "entreprise")
@@ -69,7 +86,14 @@ class Orchestrator:
                 if "extraction" in agent.__class__.__name__.lower():
                     try:
                         if agent.can_handle(question, ctx):
+                            await event_stream.broadcast({"type": "agent_start", "agent": agent.__class__.__name__})
                             result = await agent.run(question, ctx)
+                            await event_stream.broadcast({
+                                "type": "agent_result",
+                                "agent": agent.__class__.__name__,
+                                "sources": result.get("sources", []),
+                                "score": result.get("score")
+                            })
                             if result and result.get("answer"):
                                 ctx["last_answer"] = result.get("answer")
                                 ctx["sources"] = result.get("sources", [])
@@ -90,7 +114,14 @@ class Orchestrator:
         for agent in self.agents:
             try:
                 if agent.can_handle(question, ctx):
+                    await event_stream.broadcast({"type": "agent_start", "agent": agent.__class__.__name__})
                     result = await agent.run(question, ctx)
+                    await event_stream.broadcast({
+                        "type": "agent_result",
+                        "agent": agent.__class__.__name__,
+                        "sources": result.get("sources", []),
+                        "score": result.get("score")
+                    })
                     if result and result.get("answer"):
                         ctx["last_answer"] = result.get("answer")
                         ctx["sources"] = result.get("sources", [])
@@ -104,6 +135,7 @@ class Orchestrator:
                 continue
 
         # ---- Fallback final
+        await event_stream.broadcast({"type": "fallback"})
         return {
             "answer": "DÃ©solÃ©, je ne sais pas rÃ©pondre.",
             "sources": [],
