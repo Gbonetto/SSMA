@@ -5,7 +5,6 @@ from pydantic import BaseModel
 from orchestrator.orchestrator import Orchestrator
 from typing import Optional
 from core.logging import log_endpoint
-import json
 import time
 import asyncio
 from pathlib import Path
@@ -48,31 +47,20 @@ class QueryRequest(BaseModel):
 
 @app.post("/api/query")
 @log_endpoint
-async def query_endpoint(request: Request):
-    try:
-        body = await request.json()
-        question = body.get("question")
-        session_id = body.get("session_id", "default")
-    except Exception as e:
-        raw = await request.body()
-        try:
-            body = json.loads(raw.decode("utf-8"))
-            question = body.get("question")
-            session_id = body.get("session_id", "default")
-        except Exception as e2:
-            raise HTTPException(status_code=400, detail="Impossible de parser le body JSON envoyÃ©.")
-
-    if not question or not str(question).strip():
+async def query_endpoint(payload: QueryRequest):
+    if not payload.question or not str(payload.question).strip():
         raise HTTPException(status_code=422, detail="La question ne peut pas Ãªtre vide")
 
+    session_id = payload.session_id or "default"
+
     # ----- AUTO-EVAL -----
-    result = await orch.handle(question, session_id)
+    result = await orch.handle(payload.question, session_id)
     try:
         from pipelines.auto_eval import auto_eval_llm
-        eval_result = auto_eval_llm(question, result.get("answer", ""), result.get("sources", []))
+        eval_result = auto_eval_llm(payload.question, result.get("answer", ""), result.get("sources", []))
         result["auto_eval"] = eval_result
         from core.logging import log_auto_eval
-        log_auto_eval(question, result.get("answer", ""), eval_result, session_id)
+        log_auto_eval(payload.question, result.get("answer", ""), eval_result, session_id)
     except Exception as e:
         result["auto_eval"] = {"pertinence": -1, "clarte": -1, "commentaire": f"Auto-Ã©val KO: {e}"}
     return result
