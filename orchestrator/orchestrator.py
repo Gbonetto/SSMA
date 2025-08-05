@@ -4,12 +4,13 @@ import agents
 from agents.base import Agent
 from core.context_manager import ContextManager
 from pipelines.rag_chain import detect_intention
-from pipelines.auto_eval import auto_eval_llm  # <-- IMPORT AUTO-EVAL
+from agents.agent_verifier import VerifierAgent
 
 class Orchestrator:
     def __init__(self):
         self.context = ContextManager()
         self.agents: list[Agent] = self._ordered_agents()
+        self.verifier = VerifierAgent()
 
     def _load_agents(self) -> list[Agent]:
         agents_list: list[Agent] = []
@@ -73,11 +74,6 @@ class Orchestrator:
                             if result and result.get("answer"):
                                 ctx["last_answer"] = result.get("answer")
                                 ctx["sources"] = result.get("sources", [])
-                                # --- AUTO-EVAL (hors agents infra)
-                                if not isinstance(agent, (self._get_agent_class("FeedbackAgent"),
-                                                          self._get_agent_class("N8NWebhookAgent"))):
-                                    eval_result = auto_eval_llm(question, result["answer"], result.get("sources", []))
-                                    result["auto_eval"] = eval_result
                                 return result
                     except Exception:
                         continue
@@ -86,7 +82,7 @@ class Orchestrator:
         if intention in ("recherche", "keyword", "passage"):
             ctx["force_search"] = True
 
-        # ---- Boucle principale : le premier agent qui rÃ©pond â€œgagneâ€
+        # ---- Boucle principale : le premier agent qui repond "gagne"
         for agent in self.agents:
             try:
                 if agent.can_handle(question, ctx):
@@ -94,11 +90,9 @@ class Orchestrator:
                     if result and result.get("answer"):
                         ctx["last_answer"] = result.get("answer")
                         ctx["sources"] = result.get("sources", [])
-                        # --- AUTO-EVAL (hors agents infra)
-                        if not isinstance(agent, (self._get_agent_class("FeedbackAgent"),
-                                                  self._get_agent_class("N8NWebhookAgent"))):
-                            eval_result = auto_eval_llm(question, result["answer"], result.get("sources", []))
-                            result["auto_eval"] = eval_result
+                        if isinstance(agent, self._get_agent_class("SynthesisAgent")):
+                            verification = await self.verifier.run(question, ctx)
+                            result["auto_eval"] = verification.get("auto_eval")
                         return result
             except Exception:
                 continue
