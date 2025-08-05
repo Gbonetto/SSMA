@@ -1,4 +1,4 @@
-﻿# pipelines/rag_chain.py
+# pipelines/rag_chain.py
 
 import logging
 from qdrant_client import QdrantClient

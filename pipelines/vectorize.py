@@ -1,4 +1,4 @@
-﻿# pipelines/vectorize.py
+# pipelines/vectorize.py
 
 import os
 import logging

@@ -1,4 +1,4 @@
-﻿# api/debug.py
+# api/debug.py
 from fastapi import APIRouter
 from qdrant_client import QdrantClient
 

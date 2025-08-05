@@ -1,4 +1,4 @@
-﻿import os
+import os
 import shutil
 from qdrant_client import QdrantClient
 

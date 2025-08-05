@@ -1,4 +1,4 @@
-﻿import os
+import os
 import csv
 from datetime import datetime
 import logging

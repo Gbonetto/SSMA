@@ -1,4 +1,4 @@
-﻿# agents/base.py
+# agents/base.py
 from abc import ABC, abstractmethod
 
 class Agent(ABC):

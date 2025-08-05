@@ -1,4 +1,4 @@
-﻿# pipelines/auto_eval.py
+# pipelines/auto_eval.py
 import openai
 import os
 

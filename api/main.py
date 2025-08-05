@@ -1,4 +1,4 @@
-﻿from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request
 from api.debug import router as debug_router
 from api.admin import router as admin_router       # <--- ADMIN
 from pydantic import BaseModel

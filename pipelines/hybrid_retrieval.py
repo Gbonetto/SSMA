@@ -1,4 +1,4 @@
-﻿# pipelines/hybrid_retrieval.py
+# pipelines/hybrid_retrieval.py
 from qdrant_client import QdrantClient
 from langchain_qdrant import Qdrant
 from langchain_huggingface import HuggingFaceEmbeddings

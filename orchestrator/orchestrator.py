@@ -1,10 +1,11 @@
-﻿import pkgutil
+import pkgutil
 import importlib
 import agents
 from agents.base import Agent
 from core.context_manager import ContextManager
 from pipelines.rag_chain import detect_intention
 from pipelines.auto_eval import auto_eval_llm  # <-- IMPORT AUTO-EVAL
+
 
 class Orchestrator:
     def __init__(self):
@@ -23,6 +24,7 @@ class Orchestrator:
 
     def _ordered_agents(self) -> list[Agent]:
         all_agents = self._load_agents()
+
         def agent_priority(agent):
             cname = agent.__class__.__name__.lower()
             if "extraction" in cname:
@@ -36,9 +38,10 @@ class Orchestrator:
             if "n8n" in cname:
                 return 4
             return 5
+
         return sorted(all_agents, key=agent_priority)
 
-    async def handle(self, question: str, session_id: str = "default", context_override: dict = None) -> dict:
+    async def handle(self, question: str, session_id: str = "default", context_override: dict | None = None) -> dict:
         sid = session_id or "default"
         if context_override is not None:
             ctx = context_override.copy()
@@ -62,8 +65,8 @@ class Orchestrator:
                     if agent.can_handle(question, ctx):
                         return await agent.run(question, ctx)
 
-        # ---- Extraction prioritaire (intention ou mots-clÃ©s)
-        entity_intents = ("entitÃ©", "montant", "date", "personne", "extrait", "extraire", "noms", "entreprise")
+        # ---- Extraction prioritaire (intention ou mots-clés)
+        entity_intents = ("entité", "montant", "date", "personne", "extrait", "extraire", "noms", "entreprise")
         if any(e in intention for e in entity_intents) or any(e in question.lower() for e in entity_intents):
             for agent in self.agents:
                 if "extraction" in agent.__class__.__name__.lower():
@@ -82,12 +85,15 @@ class Orchestrator:
                     except Exception:
                         continue
 
-        # ---- Recherche forcÃ©e (keywords, passages, etc.)
+        # ---- Recherche forcée (keywords, passages, etc.)
         if intention in ("recherche", "keyword", "passage"):
             ctx["force_search"] = True
 
-        # ---- Boucle principale : le premier agent qui rÃ©pond â€œgagneâ€
+        # ---- Boucle principale : le premier agent qui renvoie une réponse gagne
         for agent in self.agents:
+            # On ignore l'éventuel FallbackAgent ici; il sera appelé en dernier recours.
+            if "fallback" in agent.__class__.__name__.lower():
+                continue
             try:
                 if agent.can_handle(question, ctx):
                     result = await agent.run(question, ctx)
@@ -103,19 +109,21 @@ class Orchestrator:
             except Exception:
                 continue
 
-        # ---- Fallback final
+        # ---- Fallback final via FallbackAgent s'il existe
+        for agent in self.agents:
+            if "fallback" in agent.__class__.__name__.lower():
+                return await agent.run(question, ctx)
+
+        # Aucun agent n'a pu répondre
         return {
-            "answer": "DÃ©solÃ©, je ne sais pas rÃ©pondre.",
+            "answer": "Désolé, je ne sais pas répondre.",
             "sources": [],
             "entities": {}
         }
 
     def _get_agent_class(self, name):
-        """Retourne la classe d'agent Ã  partir de son nom."""
+        """Retourne la classe d'agent à partir de son nom."""
         for agent in self.agents:
             if agent.__class__.__name__ == name:
                 return agent.__class__
         return type(None)
-
-
-

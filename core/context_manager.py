@@ -1,4 +1,4 @@
-﻿# core/context_manager.py
+# core/context_manager.py
 
 from typing import Dict, Any, List, Optional
 
