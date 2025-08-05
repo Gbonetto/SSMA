@@ -4,6 +4,7 @@ import agents
 from agents.base import Agent
 from core.context_manager import ContextManager
 from pipelines.rag_chain import detect_intention
+from agents.agent_verifier import VerifierAgent
 from pipelines.auto_eval import auto_eval_llm  # <-- IMPORT AUTO-EVAL
 from core import event_stream
 
@@ -11,6 +12,7 @@ class Orchestrator:
     def __init__(self):
         self.context = ContextManager()
         self.agents: list[Agent] = self._ordered_agents()
+        self.verifier = VerifierAgent()
 
     def _load_agents(self) -> list[Agent]:
         agents_list: list[Agent] = []
@@ -148,9 +150,13 @@ class Orchestrator:
                         ctx["last_answer"] = result.get("answer")
                         ctx["sources"] = result.get("sources", [])
                         ctx["reasoning"].append(f"{agent.__class__.__name__} a fourni une réponse.")
-                        # --- AUTO-EVAL (hors agents infra)
-                        if not isinstance(agent, (self._get_agent_class("FeedbackAgent"),
-                                                  self._get_agent_class("N8NWebhookAgent"))):
+                        # -- Vérification pour SynthesisAgent uniquement --
+                        if isinstance(agent, self._get_agent_class("SynthesisAgent")):
+                            verification = await self.verifier.run(question, ctx)
+                            result["auto_eval"] = verification.get("auto_eval")
+                        # --- AUTO-EVAL (hors agents infra et hors SynthesisAgent qui passe déjà dans VerifierAgent)
+                        elif not isinstance(agent, (self._get_agent_class("FeedbackAgent"),
+                                                    self._get_agent_class("N8NWebhookAgent"))):
                             eval_result = auto_eval_llm(question, result["answer"], result.get("sources", []))
                             result["auto_eval"] = eval_result
                         return result
