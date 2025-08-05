@@ -1,4 +1,4 @@
-﻿import os
+import os
 import logging
 from core.logging import get_logger
 from core.file_parser import extract_text_and_metadata

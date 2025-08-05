@@ -1,4 +1,4 @@
-﻿# scripts/ingest.py
+# scripts/ingest.py
 import sys
 import logging
 from core.logging import get_logger

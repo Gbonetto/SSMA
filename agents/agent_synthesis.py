@@ -1,4 +1,4 @@
-﻿# agents/agent_synthesis.py
+# agents/agent_synthesis.py
 from .base import Agent
 from pipelines.rag_chain import answer_with_rag
 

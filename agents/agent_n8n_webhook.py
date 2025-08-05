@@ -1,4 +1,4 @@
-﻿from .base import Agent
+from .base import Agent
 import logging
 
 class N8NWebhookAgent(Agent):

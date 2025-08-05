@@ -1,4 +1,4 @@
-﻿from .base import Agent
+from .base import Agent
 from pipelines.extract_entities import extract_all_entities
 from core.config import settings
 

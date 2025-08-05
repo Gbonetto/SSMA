@@ -1,4 +1,4 @@
-﻿import logging
+import logging
 from core.logging import get_logger
 from qdrant_client import QdrantClient
 
@@ -13,6 +13,3 @@ for doc in res[0]:
     logger.info("---")
     logger.info(doc.payload.get("page_content", "NO CONTENT"))
     logger.info(doc.payload)
-
-
-

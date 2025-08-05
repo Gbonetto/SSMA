@@ -1,4 +1,4 @@
-﻿from .base import Agent
+from .base import Agent
 from core.logging import log_feedback
 
 class FeedbackAgent(Agent):

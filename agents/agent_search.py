@@ -1,4 +1,4 @@
-﻿# agents/agent_search.py
+# agents/agent_search.py
 from .base import Agent
 from pipelines.hybrid_retrieval import hybrid_search
 

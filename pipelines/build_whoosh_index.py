@@ -1,4 +1,4 @@
-﻿import sys
+import sys
 import os
 import logging
 from core.logging import get_logger

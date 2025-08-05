@@ -1,4 +1,4 @@
-﻿# pipelines/rerank.py
+# pipelines/rerank.py
 import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import numpy as np
