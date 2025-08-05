@@ -12,11 +12,13 @@ from pipelines.rerank import BGEReranker
 # Initialise le reranker global (une seule instance)
 reranker = BGEReranker()
 
+# Shared embeddings and Qdrant client instances
+embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+qdrant_client = QdrantClient(url=settings.QDRANT_URL)
+
 def semantic_search(query: str, top_k=10):
-    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
-    client = QdrantClient(url=settings.QDRANT_URL)
     vectorstore = Qdrant(
-        client=client,
+        client=qdrant_client,
         collection_name=settings.QDRANT_COLLECTION,
         embeddings=embeddings,
     )

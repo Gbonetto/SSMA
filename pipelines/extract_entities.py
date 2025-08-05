@@ -1,6 +1,6 @@
+import langdetect
 import re
 import spacy
-import langdetect
 
 # ========================
 # Chargement des modèles spaCy
@@ -99,7 +99,6 @@ def fallback_llm_extract_persons(text, openai_api_key):
         temperature=0
     )
     import json
-    import re
     answer = response.choices[0].message.content
     try:
         match = re.search(r'\{.*\}', answer, re.DOTALL)
