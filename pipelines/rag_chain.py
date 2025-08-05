@@ -1,14 +1,15 @@
-# pipelines/rag_chain.py
-
 import logging
+from core.logging import get_logger
 from qdrant_client import QdrantClient
-from langchain_qdrant import Qdrant  # Remplace l'ancien import deprecated
+from langchain_qdrant import Qdrant
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_openai import OpenAI  # Remplace l'ancien import deprecated
+from langchain_openai import OpenAI
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 
 from core.config import settings
+
+logger = get_logger(__name__)
 
 def get_embeddings():
     return HuggingFaceEmbeddings(model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
@@ -59,7 +60,6 @@ Tu es un assistant temporel.
 Question : {question}
 Réponse :
 """,
-        # Prompt par défaut renforcé
         "par_defaut": """
 Tu es un assistant juridique. Tu dois toujours répondre, même si l'information n'est pas complète.
 Si tu ne trouves pas la réponse exacte, produis la meilleure synthèse possible à partir du contexte ci-dessous. Ne réponds jamais "je ne sais pas" ni "désolé".
@@ -85,14 +85,13 @@ def answer_with_rag(question: str, top_k: int = 8, user: str = None) -> dict:
     )
 
     retriever = vectorstore.as_retriever(search_kwargs={"k": top_k})
-    # Selon ta version de langchain-core, tu peux utiliser invoke() (synchrone) ou ainvoke() (async)
     retrieved_docs = retriever.invoke(question)
 
-    print("\n=== Chunks retrouvés pour la question:", question)
+    logger.debug("=== Chunks retrouvés pour la question: %s", question)
     if not retrieved_docs:
-        print("!!! Aucun chunk retrouvé")
+        logger.debug("!!! Aucun chunk retrouvé")
     for doc in retrieved_docs:
-        print("---", doc.page_content[:200])
+        logger.debug("--- %s", doc.page_content[:200])
 
     if not settings.OPENAI_API_KEY:
         return {"answer": "", "sources": [], "entities": {}, "error": "OPENAI_API_KEY non configurée"}
@@ -101,10 +100,9 @@ def answer_with_rag(question: str, top_k: int = 8, user: str = None) -> dict:
     intention = detect_intention(question)
     prompt = get_prompt_for_intention(intention)
 
-    # Affiche le prompt réel (simulateur "ce que voit le LLM")
     ctx_concat = "\n".join([d.page_content for d in retrieved_docs])
-    print("\n=== PROMPT FINAL ENVOYÉ AU LLM ===")
-    print(prompt.format(context=ctx_concat, question=question))
+    logger.debug("=== PROMPT FINAL ENVOYÉ AU LLM ===")
+    logger.debug(prompt.format(context=ctx_concat, question=question))
 
     llm = OpenAI(temperature=0, openai_api_key=settings.OPENAI_API_KEY)
     qa = RetrievalQA.from_chain_type(
@@ -115,22 +113,16 @@ def answer_with_rag(question: str, top_k: int = 8, user: str = None) -> dict:
     )
     result = qa({"query": question})
 
-    print("\n=== RAW RESULT DE LLM ===")
-    print(result)
+    logger.debug("=== RAW RESULT DE LLM ===")
+    logger.debug(result)
 
-    # Sécurité : vérifie la présence de "result" (peut varier selon version)
     answer = result.get("result", "")
     docs = result.get("source_documents", [])
 
-    # DEBUG : affiche le contexte passé effectivement au LLM (source_documents)
-    print("\n=== CONTEXT EFFECTIVEMENT PASSE AU LLM ===")
+    logger.debug("=== CONTEXT EFFECTIVEMENT PASSE AU LLM ===")
     for d in docs:
-        print(d.page_content[:400])
+        logger.debug(d.page_content[:400])
 
-    # --- format de sortie basique ---
     sources = [{"text": d.page_content, "metadata": d.metadata} for d in docs]
-    logging.info(f"RAG >> question={question} answer={answer[:60]}...")
+    logger.info("RAG >> question=%s answer=%s...", question, answer[:60])
     return {"answer": answer, "sources": sources, "entities": {}}
-
-
-

@@ -1,5 +1,6 @@
 import os
 import logging
+from core.logging import get_logger
 from core.file_parser import extract_text_and_metadata
 from pipelines.vectorize import store_text_in_qdrant  # Adapté à ta brique vectorisation
 import time
@@ -13,11 +14,10 @@ SUPPORTED_EXT = {"pdf", "docx", "doc", "txt", "xlsx", "xls", "png", "jpg", "jpeg
 
 os.makedirs("logs", exist_ok=True)
 
-logging.basicConfig(
-    filename=LOG_FILE,
-    level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(message)s'
-)
+logger = get_logger(__name__)
+file_handler = logging.FileHandler(LOG_FILE)
+file_handler.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(message)s'))
+logger.addHandler(file_handler)
 
 def process_file(path):
     filename = os.path.basename(path)
@@ -42,30 +42,30 @@ def main():
             path = os.path.join(root, file)
             total += 1
             try:
-                logging.info(f"Indexation de : {path}")
+                logger.info("Indexation de : %s", path)
                 nb_chunks, meta = process_file(path)
                 with open(SUCCESS_LOG, "a", encoding="utf-8") as sl:
                     sl.write(f"{file},{meta['ext']},{nb_chunks}\n")
-                logging.info(f"SUCCESS: {file} ({meta['ext']}) -> {nb_chunks} chunks.")
+                logger.info("SUCCESS: %s (%s) -> %d chunks.", file, meta['ext'], nb_chunks)
                 success += 1
                 results.append((file, meta['ext'], nb_chunks))
             except Exception as e:
                 with open(ERROR_LOG, "a", encoding="utf-8") as el:
                     el.write(f"{file},{ext},ERROR,\"{str(e)}\"\n")
-                logging.error(f"FAIL: {file} ({ext}) : {e}")
+                logger.error("FAIL: %s (%s) : %s", file, ext, e)
                 failed += 1
                 errors.append((file, ext, str(e)))
 
     # Rapport final
-    print(f"\nIndexation terminée : {success}/{total} fichiers OK, {failed} erreurs.")
-    print(f"Voir : {LOG_FILE}, {SUCCESS_LOG}, {ERROR_LOG}")
+    logger.info("\nIndexation terminée : %d/%d fichiers OK, %d erreurs.", success, total, failed)
+    logger.info("Voir : %s, %s, %s", LOG_FILE, SUCCESS_LOG, ERROR_LOG)
     if failed:
-        print(f"Fichiers en erreur : {[e[0] for e in errors]}")
+        logger.info("Fichiers en erreur : %s", [e[0] for e in errors])
     else:
-        print("Aucune erreur.")
+        logger.info("Aucune erreur.")
     # Possibilité d’envoyer un rapport par email/n8n ici
 
 if __name__ == "__main__":
     t0 = time.time()
     main()
-    print(f"Temps total : {time.time() - t0:.1f} sec")
+    logger.info("Temps total : %.1f sec", time.time() - t0)

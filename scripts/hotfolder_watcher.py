@@ -2,6 +2,7 @@ import sys
 import os
 import time
 import logging
+from core.logging import get_logger
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from core.file_parser import extract_text_and_metadata
@@ -17,12 +18,10 @@ os.makedirs(WATCH_DIR, exist_ok=True)
 os.makedirs(PROCESSED_DIR, exist_ok=True)
 
 # ENCODING UTF-8 pour les logs !
-logging.basicConfig(
-    filename=LOG_FILE,
-    level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(message)s',
-    encoding='utf-8'
-)
+logger = get_logger(__name__)
+file_handler = logging.FileHandler(LOG_FILE, encoding='utf-8')
+file_handler.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(message)s'))
+logger.addHandler(file_handler)
 
 def safe_move(src, dst):
     base, ext = os.path.splitext(dst)
@@ -35,7 +34,7 @@ def safe_move(src, dst):
 def process_file(path):
     filename = os.path.basename(path)
     if "INDEXED_" in filename or "/processed/" in path.replace("\\", "/"):
-        logging.info(f"Ignoré (déjà traité) : {path}")
+        logger.info("Ignoré (déjà traité) : %s", path)
         return
 
     try:
@@ -45,15 +44,15 @@ def process_file(path):
         if not text or not text.strip():
             raise ValueError("Texte vide ou extraction impossible.")
         nb_chunks = store_text_in_qdrant(text, metadata=meta)
-        logging.info(f"✅ {filename} ({meta['ext']}) importé ({nb_chunks} chunks)")
+        logger.info("✅ %s (%s) importé (%d chunks)", filename, meta['ext'], nb_chunks)
 
         new_filename = f"INDEXED_{filename}"
         new_path = os.path.join(PROCESSED_DIR, new_filename)
         safe_move(path, new_path)
-        logging.info(f"Déplacé et renommé : {new_path}")
+        logger.info("Déplacé et renommé : %s", new_path)
 
     except Exception as e:
-        logging.error(f"Erreur import {path} : {e}")
+        logger.error("Erreur import %s : %s", path, e)
 
 class WatcherHandler(FileSystemEventHandler):
     def on_moved(self, event):
@@ -67,20 +66,20 @@ class WatcherHandler(FileSystemEventHandler):
             return
         ext = filename.split(".")[-1].lower()
         if ext not in SUPPORTED_EXT:
-            logging.info(f"Ignoré (format non supporté) : {event.src_path}")
+            logger.info("Ignoré (format non supporté) : %s", event.src_path)
             return
         try:
-            logging.info(f"Détection nouveau fichier : {event.src_path}")
+            logger.info("Détection nouveau fichier : %s", event.src_path)
             time.sleep(1.0)
             process_file(event.src_path)
         except Exception as e:
-            logging.error(f"Erreur process_file sur {event.src_path} : {e}")
+            logger.error("Erreur process_file sur %s : %s", event.src_path, e)
 
 if __name__ == "__main__":
     observer = Observer()
     event_handler = WatcherHandler()
     observer.schedule(event_handler, WATCH_DIR, recursive=True)
-    print(f"👋  Watcher actif sur : {os.path.abspath(WATCH_DIR)}\nDéposez des fichiers, ils seront indexés, renommés et déplacés dans /processed/ automatiquement !")
+    logger.info("👋  Watcher actif sur : %s\nDéposez des fichiers, ils seront indexés, renommés et déplacés dans /processed/ automatiquement !", os.path.abspath(WATCH_DIR))
     observer.start()
     try:
         while True:
