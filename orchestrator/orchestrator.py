@@ -1,10 +1,11 @@
-﻿import pkgutil
+import pkgutil
 import importlib
 import agents
 from agents.base import Agent
 from core.context_manager import ContextManager
 from pipelines.rag_chain import detect_intention
 from pipelines.auto_eval import auto_eval_llm  # <-- IMPORT AUTO-EVAL
+from core import event_stream
 
 class Orchestrator:
     def __init__(self):
@@ -37,7 +38,6 @@ class Orchestrator:
                 return 4
             return 5
         return sorted(all_agents, key=agent_priority)
-
 
     async def handle(self, question: str, session_id: str = "default", context_override: dict = None) -> dict:
         sid = session_id or "default"
@@ -75,8 +75,14 @@ class Orchestrator:
             for agent in agents_sequence:
                 if "feedback" in agent.__class__.__name__.lower():
                     if agent.can_handle(question, ctx):
+                        await event_stream.broadcast({"type": "agent_start", "agent": agent.__class__.__name__})
                         result = await agent.run(question, ctx)
-                        ctx["reasoning"].append(f"{agent.__class__.__name__} a fourni une réponse.")
+                        await event_stream.broadcast({
+                            "type": "agent_result",
+                            "agent": agent.__class__.__name__,
+                            "sources": result.get("sources", []),
+                            "score": result.get("score")
+                        })
                         return result
 
         # ---- N8NWebhookAgent
@@ -84,8 +90,14 @@ class Orchestrator:
             for agent in agents_sequence:
                 if "n8n" in agent.__class__.__name__.lower():
                     if agent.can_handle(question, ctx):
+                        await event_stream.broadcast({"type": "agent_start", "agent": agent.__class__.__name__})
                         result = await agent.run(question, ctx)
-                        ctx["reasoning"].append(f"{agent.__class__.__name__} a fourni une réponse.")
+                        await event_stream.broadcast({
+                            "type": "agent_result",
+                            "agent": agent.__class__.__name__,
+                            "sources": result.get("sources", []),
+                            "score": result.get("score")
+                        })
                         return result
 
         # ---- Extraction prioritaire (intention ou mots-clés)
@@ -95,7 +107,14 @@ class Orchestrator:
                 if "extraction" in agent.__class__.__name__.lower():
                     try:
                         if agent.can_handle(question, ctx):
+                            await event_stream.broadcast({"type": "agent_start", "agent": agent.__class__.__name__})
                             result = await agent.run(question, ctx)
+                            await event_stream.broadcast({
+                                "type": "agent_result",
+                                "agent": agent.__class__.__name__,
+                                "sources": result.get("sources", []),
+                                "score": result.get("score")
+                            })
                             if result and result.get("answer"):
                                 ctx["last_answer"] = result.get("answer")
                                 ctx["sources"] = result.get("sources", [])
@@ -117,7 +136,14 @@ class Orchestrator:
         for agent in agents_sequence:
             try:
                 if agent.can_handle(question, ctx):
+                    await event_stream.broadcast({"type": "agent_start", "agent": agent.__class__.__name__})
                     result = await agent.run(question, ctx)
+                    await event_stream.broadcast({
+                        "type": "agent_result",
+                        "agent": agent.__class__.__name__,
+                        "sources": result.get("sources", []),
+                        "score": result.get("score")
+                    })
                     if result and result.get("answer"):
                         ctx["last_answer"] = result.get("answer")
                         ctx["sources"] = result.get("sources", [])
@@ -132,7 +158,7 @@ class Orchestrator:
                 continue
 
         # ---- Fallback final
-        ctx["reasoning"].append("Aucun agent n'a pu répondre, fallback activé.")
+        await event_stream.broadcast({"type": "fallback"})
         return {
             "answer": "Désolé, je ne sais pas répondre.",
             "sources": [],
@@ -140,10 +166,8 @@ class Orchestrator:
         }
 
     def _get_agent_class(self, name):
-        """Retourne la classe d'agent Ã  partir de son nom."""
+        """Retourne la classe d'agent à partir de son nom."""
         for agent in self.agents:
             if agent.__class__.__name__ == name:
                 return agent.__class__
         return type(None)
-
-
